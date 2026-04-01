@@ -1,0 +1,204 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0e1a;
+  --card: #111827;
+  --border: #1e293b;
+  --accent: #6366f1;
+  --accent-glow: rgba(99,102,241,.25);
+  --green: #10b981;
+  --green-glow: rgba(16,185,129,.25);
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --warm: #f59e0b;
+  --red: #ef4444;
+  --gov-gold: #c9a84c;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== GOVERNMENT HEADER ===== */
+.gov-topbar {
+  background: #0f172a;
+  border-bottom: 1px solid rgba(201,168,76,.2);
+  padding: .4rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: .65rem;
+  color: #64748b;
+}
+.gov-topbar a {
+  color: #64748b;
+  text-decoration: none;
+  transition: color .2s;
+}
+.gov-topbar a:hover { color: var(--text); }
+
+.gov-header {
+  background: linear-gradient(180deg, #0f172a 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 1.25rem 1.5rem;
+}
+.gov-header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.gov-emblem {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 2px solid var(--gov-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(201,168,76,.15);
+}
+.gov-header-text { flex: 1; }
+.gov-home-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+  transition: opacity .2s;
+}
+.gov-home-link:hover { opacity: .85; }
+.gov-header-text .ministry {
+  font-size: .6rem;
+  text-transform: uppercase;
+  letter-spacing: .15em;
+  color: var(--gov-gold);
+  font-weight: 600;
+}
+.gov-header-text .program-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 2px;
+}
+.gov-header-text .program-sub {
+  font-size: .72rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.gov-header-nav {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+.gov-header-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: .78rem;
+  font-weight: 500;
+  transition: color .2s;
+  white-space: nowrap;
+}
+.gov-header-nav a:hover { color: var(--text); }
+.gov-header-nav a.active { color: var(--gov-gold); }
+
+/* ===== GOVERNMENT FOOTER ===== */
+.gov-footer {
+  margin-top: auto;
+  background: #0f172a;
+  border-top: 1px solid var(--border);
+  padding: 2rem 1.5rem 1.5rem;
+}
+.gov-footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.gov-footer-top {
+  display: flex;
+  gap: 3rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.gov-footer-col { min-width: 160px; }
+.gov-footer-col .col-title {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--gov-gold);
+  font-weight: 600;
+  margin-bottom: .6rem;
+}
+.gov-footer-col a,
+.gov-footer-col p {
+  display: block;
+  font-size: .75rem;
+  color: #64748b;
+  text-decoration: none;
+  line-height: 1.8;
+  transition: color .2s;
+}
+.gov-footer-col a:hover { color: var(--text); }
+
+.gov-footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  padding-top: 1.25rem;
+}
+.gov-footer-bottom .legal {
+  font-size: .65rem;
+  color: #475569;
+  line-height: 1.6;
+}
+.gov-footer-bottom .badges {
+  display: flex;
+  gap: .5rem;
+}
+.gov-footer-bottom .badge {
+  font-size: .55rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(201,168,76,.08);
+  border: 1px solid rgba(201,168,76,.15);
+  color: var(--gov-gold);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* Particles */
+#particles {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: -1; overflow: hidden;
+}
+.particle {
+  position: absolute; width: 2px; height: 2px;
+  background: rgba(99,102,241,.3); border-radius: 50%;
+  animation: float linear infinite;
+}
+@keyframes float {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; } 90% { opacity: 1; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+@media (max-width: 700px) {
+  .gov-header-nav { display: none; }
+  .gov-footer-top { gap: 1.5rem; }
+}
