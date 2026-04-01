@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crisis Support Program - Finding Your Match</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<!-- Gov top bar -->
+<div class="gov-topbar">
+  <span>An official program of the National Crisis Response Authority</span>
+  <span>24/7 Hotline: 1-800-CRISIS</span>
+</div>
+
+<!-- Gov header -->
+<nav class="gov-header">
+  <div class="gov-header-inner">
+    <a href="index.html" class="gov-home-link">
+      <div class="gov-emblem">🏛️</div>
+      <div class="gov-header-text">
+        <div class="ministry">Ministry of Social Affairs & Humanitarian Aid</div>
+        <div class="program-name">Crisis Support Program</div>
+        <div class="program-sub">AI-Powered Matching - Finding your support match</div>
+      </div>
+    </a>
+    <div class="gov-header-nav">
+      <a href="index.html">Home</a>
+      <a href="ineedhelp.html" class="active">Get Help</a>
+      <a href="iwanttohelp.html">Volunteer</a>
+      <a href="matching.html">AI Engine</a>
+      <a href="volunteers.html">Browse</a>
+    </div>
+  </div>
+</nav>
+
+<div id="stage">
+  <!-- Step 1: Help button + Typing -->
+  <div class="card visible" id="card-input">
+    <div class="card-label">Your Message</div>
+    <div class="input-row">
+      <div id="typing-area">
+        <span id="typed-text"></span><span class="cursor" id="cursor"></span>
+      </div>
+      <button class="send-help-btn visible" id="send-help-btn">
+        <span>🆘</span> Help Me
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Donor Pool (left) + AI Analysis (right) -->
+  <div class="split-row">
+    <div class="card split-card" id="card-pool">
+      <div class="pool-header">
+        <div>
+          <div class="card-label">Donor Pool</div>
+          <div class="pool-count"><span id="pool-num">482</span> <span>registered donors</span></div>
+        </div>
+      </div>
+      <div class="profile-grid" id="profile-grid"></div>
+      <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="progress-label">
+        <span id="scan-status">Initializing scan…</span>
+        <span id="scan-pct">0%</span>
+      </div>
+    </div>
+    <div class="card split-card" id="card-analysis">
+      <div class="ai-badge"><span class="dot"></span> AI Analysis</div>
+      <div id="analysis-text"></div>
+      <div class="tag-row" id="tag-row"></div>
+    </div>
+  </div>
+
+  <!-- Step 3, 4, 5: Criteria + Match + Meeting in 3 columns -->
+  <div class="split-row three-col">
+    <div class="card split-card" id="card-criteria">
+      <div class="card-label">Matching Criteria</div>
+      <ul class="criteria-list" id="criteria-list"></ul>
+    </div>
+    <div class="card split-card" id="card-match">
+      <div class="match-result">
+        <div class="match-avatar"><img src="https://i.pravatar.cc/160?img=32" alt="Sarah Nakamura"></div>
+        <div class="match-name">Sarah Nakamura</div>
+        <div class="match-detail">Trauma-informed listener · 4 yrs experience · Speaks Arabic &amp; English</div>
+        <div class="match-score" style="background:rgba(16,185,129,.15);color:var(--green);">97.4% Match</div>
+      </div>
+    </div>
+    <div class="card split-card" id="card-meeting">
+      <div class="card-label">Session Scheduled</div>
+      <div id="time-search" class="time-search">
+        <div class="time-search-label">Finding earliest available slot…</div>
+        <div class="time-slots" id="time-slots"></div>
+      </div>
+      <div class="meeting-row" id="meeting-final" style="display:none;">
+        <div class="meeting-icon" style="background:rgba(99,102,241,.15);color:var(--accent);">📅</div>
+        <div class="meeting-info">
+          <div class="label">Date &amp; Time</div>
+          <div class="value" id="meeting-time"></div>
+        </div>
+      </div>
+      <button class="cta-btn" id="join-btn" style="display:none;">Join Meeting</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Stage */
+  #stage {
+    max-width: 1100px;
+    margin: 1rem auto;
+    padding: 0 1rem;
+    overflow: hidden;
+  }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity .5s, transform .5s;
+    overflow: hidden;
+  }
+  .card.visible { opacity: 1; transform: translateY(0); }
+  .card-label {
+    font-size: .65rem; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--muted); margin-bottom: .75rem;
+  }
+
+  /* Typing */
+  .input-row {
+    display: flex;
+    gap: .75rem;
+    align-items: stretch;
+  }
+  #typing-area {
+    flex: 1;
+    min-width: 0;
+    background: #1e293b; border-radius: 12px;
+    padding: 1.25rem; font-size: 1.05rem;
+    line-height: 1.6; min-height: 56px; color: var(--text);
+  }
+  .cursor {
+    display: inline-block; width: 2px; height: 1.15em;
+    background: var(--accent); margin-left: 2px;
+    vertical-align: text-bottom; animation: blink .7s step-end infinite;
+  }
+  .cursor.hidden { display: none; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Help button */
+  .send-help-btn {
+    display: none;
+    padding: .85rem 1.5rem;
+    border: none; border-radius: 12px;
+    font-family: inherit; font-size: 1.05rem; font-weight: 600;
+    cursor: pointer; color: #fff;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 4px 24px rgba(239,68,68,.3);
+    transition: transform .2s, box-shadow .2s;
+    animation: pulse-btn 2s ease-in-out infinite;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: center;
+  }
+  .send-help-btn.visible { display: flex; align-items: center; gap: .4rem; }
+  .send-help-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(239,68,68,.45); }
+  .send-help-btn.pressed {
+    transform: scale(.95);
+    box-shadow: 0 2px 12px rgba(239,68,68,.2);
+    opacity: .7;
+    pointer-events: none;
+    transition: all .2s;
+  }
+  @keyframes pulse-btn {
+    0%,100% { box-shadow: 0 4px 30px rgba(239,68,68,.35); }
+    50% { box-shadow: 0 4px 45px rgba(239,68,68,.55); }
+  }
+
+  /* Split layout */
+  .split-row { display: flex; gap: 1rem; align-items: stretch; width: 100%; }
+  .split-card { flex: 1 1 0; min-width: 0; }
+
+  /* AI Analysis */
+  #card-analysis { font-size: .85rem; line-height: 1.55; }
+  .ai-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.25);
+    color: var(--accent); font-size: .7rem; font-weight: 600;
+    padding: 4px 10px; border-radius: 999px; margin-bottom: .75rem;
+  }
+  .ai-badge .dot {
+    width: 6px; height: 6px; background: var(--accent);
+    border-radius: 50%; animation: pulse-dot 1.2s infinite;
+  }
+  @keyframes pulse-dot { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
+  .tag-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+  .tag {
+    font-size: .65rem; padding: 3px 10px; border-radius: 999px;
+    background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.2);
+    color: #a5b4fc; opacity: 0; transform: scale(.85); transition: all .35s;
+  }
+  .tag.visible { opacity: 1; transform: scale(1); }
+  .tag.urgent { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); color: #fca5a5; }
+
+  /* Donor pool */
+  .pool-header { margin-bottom: .75rem; }
+  .pool-count { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+  .pool-count span { font-size: .75rem; color: var(--muted); font-weight: 400; }
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+    gap: 5px; margin: .75rem 0;
+  }
+  .profile-dot {
+    aspect-ratio: 1; border-radius: 50%; background: #1e293b;
+    transition: all .3s; overflow: hidden; border: 2px solid transparent;
+  }
+  .profile-dot img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    filter: grayscale(1) brightness(.5); transition: filter .3s;
+  }
+  .profile-dot.scanning { border-color: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+  .profile-dot.scanning img { filter: grayscale(.3) brightness(.8); }
+  .profile-dot.rejected { border-color: transparent; opacity: .3; }
+  .profile-dot.rejected img { filter: grayscale(1) brightness(.35); }
+  .profile-dot.matched { border-color: var(--green); box-shadow: 0 0 10px var(--green-glow); }
+  .profile-dot.matched img { filter: grayscale(0) brightness(1); }
+  .progress-wrap { background: #1e293b; border-radius: 999px; height: 5px; margin: .75rem 0; overflow: hidden; }
+  .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #a78bfa); border-radius: 999px; transition: width .15s linear; }
+  .progress-label { font-size: .7rem; color: var(--muted); display: flex; justify-content: space-between; }
+
+  /* Criteria */
+  .criteria-list { list-style: none; margin-top: .75rem; }
+  .criteria-list li {
+    display: flex; align-items: center; gap: 10px;
+    padding: .5rem 0; border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: .82rem; color: var(--muted);
+    opacity: 0; transform: translateX(-10px); transition: all .4s;
+  }
+  .criteria-list li.visible { opacity: 1; transform: translateX(0); }
+  .criteria-list li.checked { color: var(--text); }
+  .check-icon {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 1.5px solid #334155; display: flex;
+    align-items: center; justify-content: center;
+    font-size: .7rem; transition: all .3s; flex-shrink: 0;
+  }
+  .check-icon.done { background: var(--green); border-color: var(--green); color: #fff; }
+
+  /* Match */
+  .match-result { text-align: center; padding: 1.25rem; }
+  .match-avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    margin: 0 auto .6rem; border: 3px solid var(--green);
+    box-shadow: 0 0 20px var(--green-glow); overflow: hidden;
+  }
+  .match-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .match-name { font-size: 1.05rem; font-weight: 600; }
+  .match-detail { font-size: .78rem; color: var(--muted); margin-top: .2rem; }
+  .match-score {
+    display: inline-block; margin-top: .6rem; padding: 4px 14px;
+    border-radius: 999px; font-size: .78rem; font-weight: 600;
+  }
+
+  /* Meeting */
+  .meeting-row {
+    display: flex; align-items: center; gap: 1rem;
+    margin-top: .75rem; padding: .85rem; background: #1e293b; border-radius: 12px;
+  }
+  .meeting-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+  .meeting-info { flex: 1; }
+  .meeting-info .label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .meeting-info .value { font-size: .9rem; font-weight: 500; margin-top: 2px; }
+  .cta-btn {
+    display: block; width: 100%; padding: .85rem; margin-top: 1.25rem;
+    border: none; border-radius: 12px; font-family: inherit;
+    font-size: .9rem; font-weight: 600; cursor: pointer; color: #fff;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    box-shadow: 0 4px 24px var(--accent-glow);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 32px var(--accent-glow); }
+
+  /* Time search animation */
+  .time-search-label {
+    font-size: .75rem; color: var(--muted); margin-bottom: .6rem;
+  }
+  .time-slots { display: flex; flex-direction: column; gap: .4rem; }
+  .time-slot {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .5rem .7rem; border-radius: 8px;
+    background: #1e293b; font-size: .78rem;
+    opacity: 0; transform: translateX(-8px);
+    transition: all .3s;
+  }
+  .time-slot.visible { opacity: 1; transform: translateX(0); }
+  .time-slot .slot-time { font-weight: 500; min-width: 70px; }
+  .time-slot .slot-status {
+    font-size: .65rem; padding: 2px 8px; border-radius: 999px;
+    font-weight: 600;
+  }
+  .time-slot.unavailable { color: #64748b; }
+  .time-slot.unavailable .slot-status {
+    background: rgba(239,68,68,.1); color: #f87171;
+  }
+  .time-slot.checking {
+    border: 1px solid rgba(99,102,241,.3);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .time-slot.checking .slot-status {
+    background: rgba(99,102,241,.12); color: var(--accent);
+  }
+  .time-slot.available {
+    border: 1px solid rgba(16,185,129,.4);
+    background: rgba(16,185,129,.06);
+    box-shadow: 0 0 10px var(--green-glow);
+  }
+  .time-slot.available .slot-status {
+    background: rgba(16,185,129,.15); color: var(--green);
+  }
+  .meeting-confirmed {
+    text-align: center; padding: .5rem 0;
+    font-size: .8rem; color: var(--green); font-weight: 600;
+    opacity: 0; transition: opacity .4s;
+  }
+  .meeting-confirmed.visible { opacity: 1; }
+
+  /* Particles */
+  #particles { position: fixed; inset: 0; pointer-events: none; z-index: -1; overflow: hidden; }
+  .particle {
+    position: absolute; width: 2px; height: 2px;
+    background: rgba(99,102,241,.3); border-radius: 50%;
+    animation: float linear infinite;
+  }
+  @keyframes float {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 1; } 90% { opacity: 1; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+  }
+
+  @media (max-width: 640px) {
+    .split-row { flex-direction: column; }
+  }
+
+  /* 3-column row */
+  .three-col { display: flex; gap: 1rem; align-items: stretch; }
+  .three-col .split-card {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: calc((100% - 2rem) / 3);
+    overflow: hidden;
+  }
+</style>
+
+<script>
+// Particles
+(function() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (6 + Math.random() * 10) + 's';
+    p.style.animationDelay = Math.random() * 8 + 's';
+    p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+    c.appendChild(p);
+  }
+})();
+
+const $ = id => document.getElementById(id);
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const show = id => $(id).classList.add('visible');
+
+const MESSAGE = "I need to share my pain with someone who understands… I lost my home and I can't sleep anymore.";
+const TAGS = [
+  { text: 'Emotional Support', cls: '' },
+  { text: 'Grief & Loss', cls: '' },
+  { text: 'Trauma / PTSD', cls: '' },
+  { text: 'High Urgency', cls: 'urgent' },
+  { text: 'Arabic Speaker', cls: '' },
+  { text: 'Active Listening', cls: '' },
+];
+const CRITERIA = [
+  'Emotional support specialization',
+  'Trauma-informed care certified',
+  'Arabic language proficiency',
+  'Available within 2 hours',
+  'Minimum 50 hours volunteer experience',
+  'Positive recipient feedback (4.8+ rating)',
+  'No active burnout flag',
+];
+const TOTAL_DOTS = 80;
+
+async function typeMessage() {
+  const el = $('typed-text');
+  for (let i = 0; i < MESSAGE.length; i++) {
+    el.textContent += MESSAGE[i];
+    await wait(28 + Math.random() * 32);
+  }
+  await wait(400);
+  $('cursor').classList.add('hidden');
+}
+
+async function analyzeMessage() {
+  show('card-analysis');
+  const el = $('analysis-text');
+  const lines = [
+    'Detecting emotional context…',
+    'Identified: grief, displacement trauma, sleep disruption.',
+    'Matching priority: empathetic listener with trauma experience.',
+  ];
+  for (const line of lines) {
+    const p = document.createElement('p');
+    p.style.cssText = 'margin-bottom:.35rem;font-size:.82rem;';
+    el.appendChild(p);
+    for (let i = 0; i < line.length; i++) {
+      p.textContent += line[i];
+      await wait(14);
+    }
+    await wait(250);
+  }
+  const row = $('tag-row');
+  for (const t of TAGS) {
+    const span = document.createElement('span');
+    span.className = 'tag' + (t.cls ? ' ' + t.cls : '');
+    span.textContent = t.text;
+    row.appendChild(span);
+    await wait(160);
+    span.classList.add('visible');
+  }
+}
+
+async function scanPool() {
+  show('card-pool');
+  const grid = $('profile-grid');
+  const dots = [];
+  for (let i = 0; i < TOTAL_DOTS; i++) {
+    const d = document.createElement('div');
+    d.className = 'profile-dot';
+    const img = document.createElement('img');
+    img.src = `https://i.pravatar.cc/80?img=${(i % 70) + 1}`;
+    img.alt = 'Donor';
+    img.loading = 'lazy';
+    d.appendChild(img);
+    grid.appendChild(d);
+    dots.push(d);
+  }
+  await wait(300);
+
+  const bar = $('progress-bar');
+  const status = $('scan-status');
+  const pct = $('scan-pct');
+  const matchIndices = [14, 31, 47, 62, 73];
+
+  for (let i = 0; i < TOTAL_DOTS; i++) {
+    const p = Math.round(((i + 1) / TOTAL_DOTS) * 100);
+    bar.style.width = p + '%';
+    pct.textContent = p + '%';
+    dots[i].classList.add('scanning');
+
+    if (i > 1 && !matchIndices.includes(i - 2)) {
+      dots[i - 2].classList.remove('scanning');
+      dots[i - 2].classList.add('rejected');
+    }
+    if (matchIndices.includes(i)) {
+      dots[i].classList.remove('scanning');
+      dots[i].classList.add('matched');
+      status.textContent = `Potential match found (${matchIndices.filter(m => m <= i).length} of ${matchIndices.length})`;
+    } else {
+      status.textContent = `Scanning profile ${i + 1} of 482…`;
+    }
+    await wait(30 + Math.random() * 25);
+  }
+  dots.forEach((d, i) => {
+    if (!matchIndices.includes(i)) { d.classList.remove('scanning'); d.classList.add('rejected'); }
+  });
+  status.textContent = `${matchIndices.length} candidates identified - ranking…`;
+}
+
+async function checkCriteria() {
+  show('card-criteria');
+  const ul = $('criteria-list');
+  for (const c of CRITERIA) {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="check-icon">✓</span><span>${c}</span>`;
+    ul.appendChild(li);
+    await wait(180);
+    li.classList.add('visible');
+    await wait(300);
+    li.classList.add('checked');
+    li.querySelector('.check-icon').classList.add('done');
+    await wait(120);
+  }
+  await wait(500);
+}
+
+async function revealMatch() {
+  show('card-match');
+  await wait(1200);
+}
+
+async function scheduleMeeting() {
+  show('card-meeting');
+
+  const slotsContainer = $('time-slots');
+  const now = new Date();
+  const baseHour = now.getHours();
+  const baseMin = now.getMinutes();
+
+  // Generate time slots starting from now, every 30 min
+  const slots = [];
+  for (let i = 0; i < 5; i++) {
+    const t = new Date(now);
+    t.setMinutes(baseMin + (i + 1) * 30, 0, 0);
+    slots.push({
+      time: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: t,
+      available: i === 3 // 4th slot is the match
+    });
+  }
+
+  // Mark first few as unavailable (donor busy), then find the match
+  for (let i = 0; i < slots.length; i++) {
+    const s = slots[i];
+    const el = document.createElement('div');
+    el.className = 'time-slot';
+    el.innerHTML = `
+      <span class="slot-time">${s.time}</span>
+      <span class="slot-status">Checking…</span>
+    `;
+    slotsContainer.appendChild(el);
+    await wait(150);
+    el.classList.add('visible');
+    el.classList.add('checking');
+    await wait(500 + Math.random() * 300);
+
+    if (s.available) {
+      el.classList.remove('checking');
+      el.classList.add('available');
+      el.querySelector('.slot-status').textContent = '✓ Both available';
+      await wait(600);
+
+      // Hide the search, show final meeting
+      $('time-search').style.display = 'none';
+      const finalRow = $('meeting-final');
+      finalRow.style.display = 'flex';
+      $('meeting-time').textContent = `Today · ${s.time} (your local time)`;
+
+      await wait(300);
+      $('join-btn').style.display = 'block';
+      break;
+    } else {
+      el.classList.remove('checking');
+      el.classList.add('unavailable');
+      const reasons = ['Donor unavailable', 'Slot full', 'Time conflict'];
+      el.querySelector('.slot-status').textContent = reasons[i % reasons.length];
+    }
+  }
+}
+
+async function runAfterHelp() {
+  // Step 1: AI analysis + donor scan in parallel
+  await Promise.all([analyzeMessage(), scanPool()]);
+  await wait(600);
+
+  // Step 2: Criteria ticks (all must complete first)
+  await checkCriteria();
+  await wait(400);
+
+  // Step 3: Reveal matched profile
+  await revealMatch();
+
+  // Step 4: Time-slot search animation
+  await scheduleMeeting();
+}
+
+$('send-help-btn').addEventListener('click', async function() {
+  this.classList.add('pressed');
+  await wait(400);
+  await typeMessage();
+  await wait(300);
+  await runAfterHelp();
+});
+
+$('join-btn').addEventListener('click', function() {
+  alert('Connecting you to your session… (demo)');
+});
+
+// Auto-play: type message, press button, run flow
+(async function() {
+  await wait(800);
+  await typeMessage();
+  await wait(500);
+  const btn = $('send-help-btn');
+  btn.classList.add('pressed');
+  await wait(600);
+  await runAfterHelp();
+})();
+</script>
+
+<!-- Gov footer -->
+<footer class="gov-footer">
+  <div class="gov-footer-inner">
+    <div class="gov-footer-top">
+      <div class="gov-footer-col">
+        <div class="col-title">Program</div>
+        <a href="ineedhelp.html">Request Support</a>
+        <a href="iwanttohelp.html">Become a Volunteer</a>
+        <a href="#">FAQ</a>
+      </div>
+      <div class="gov-footer-col">
+        <div class="col-title">Resources</div>
+        <a href="#">Mental Health Hotline</a>
+        <a href="#">Shelter Locator</a>
+        <a href="#">Medical Aid Stations</a>
+      </div>
+      <div class="gov-footer-col">
+        <div class="col-title">Contact</div>
+        <p>National Crisis Response Authority</p>
+        <p>Hotline: 1-800-CRISIS</p>
+        <p>Email: support@crisis.gov</p>
+      </div>
+    </div>
+    <div class="gov-footer-bottom">
+      <div class="legal">© 2026 National Crisis Response Authority. All rights reserved.</div>
+      <div class="badges">
+        <span class="badge">Official Gov Service</span>
+        <span class="badge">GDPR Compliant</span>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
