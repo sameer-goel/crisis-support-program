@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crisis Support Program - Donor Dashboard</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  #stage {
+    max-width: 1100px;
+    margin: 1rem auto;
+    padding: 0 1rem;
+  }
+
+  .dashboard { display: flex; flex-direction: column; gap: 1.25rem; }
+  .dash-columns { display: flex; gap: 1.25rem; align-items: flex-start; }
+  .col-left { flex: 1.2; min-width: 0; }
+  .col-right { flex: 1; min-width: 0; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .card-label {
+    font-size: .65rem; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--muted); margin-bottom: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<!-- Gov top bar -->
+<div class="gov-topbar">
+  <span>An official program of the National Crisis Response Authority</span>
+  <span>24/7 Hotline: 1-800-CRISIS</span>
+</div>
+
+<!-- Gov header -->
+<nav class="gov-header">
+  <div class="gov-header-inner">
+    <a href="index.html" class="gov-home-link">
+      <div class="gov-emblem">🏛️</div>
+      <div class="gov-header-text">
+        <div class="ministry">Ministry of Social Affairs & Humanitarian Aid</div>
+        <div class="program-name">Crisis Support Program</div>
+        <div class="program-sub">Donor Dashboard - See where help is needed most</div>
+      </div>
+    </a>
+    <div class="gov-header-nav">
+      <a href="index.html">Home</a>
+      <a href="ineedhelp.html">Get Help</a>
+      <a href="iwanttohelp.html" class="active">Volunteer</a>
+      <a href="matching.html">AI Engine</a>
+      <a href="volunteers.html">Browse</a>
+    </div>
+  </div>
+</nav>
+
+<div id="stage">
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-num" id="stat-recipients">2,847</div>
+      <div class="stat-label">People need help</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num accent" id="stat-donors">1,204</div>
+      <div class="stat-label">Active donors</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num green" id="stat-matched">963</div>
+      <div class="stat-label">Matched today</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num warm" id="stat-waiting">1,884</div>
+      <div class="stat-label">Still waiting</div>
+    </div>
+  </div>
+
+  <div class="dashboard">
+    <!-- FULL WIDTH TOP: Quick donate tiles -->
+    <div class="card" style="width:100%">
+      <div class="card-label">I Can Offer…</div>
+      <div class="donate-grid" id="donate-grid"></div>
+    </div>
+
+    <!-- TWO COLUMNS BELOW -->
+    <div class="dash-columns">
+      <!-- LEFT: Needs demand -->
+      <div class="col-left">
+        <div class="card">
+          <div class="card-label">Top Needs - Real-time Demand</div>
+          <div id="needs-list"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Urgent requests -->
+      <div class="col-right">
+        <div class="card">
+          <div class="card-label">Urgent Requests</div>
+          <div id="urgent-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Community Events</div>
+          <div id="events-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Stats bar */
+  .stats-bar {
+    display: flex; gap: 1rem; margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .stat-item {
+    flex: 1; min-width: 120px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem; text-align: center;
+  }
+  .stat-num {
+    font-size: 1.6rem; font-weight: 700; color: var(--text);
+  }
+  .stat-num.accent { color: var(--accent); }
+  .stat-num.green { color: var(--green); }
+  .stat-num.warm { color: var(--warm); }
+  .stat-label { font-size: .7rem; color: var(--muted); margin-top: .2rem; }
+
+  /* Need bars */
+  .need-row {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .7rem 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    opacity: 0; transform: translateX(-10px);
+    transition: all .4s;
+  }
+  .need-row.visible { opacity: 1; transform: translateX(0); }
+  .need-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+  .need-info { flex: 1; min-width: 0; }
+  .need-name { font-size: .85rem; font-weight: 500; }
+  .need-meta { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+  .need-bar-wrap {
+    background: #1e293b; border-radius: 999px;
+    height: 6px; margin-top: 6px; overflow: hidden;
+  }
+  .need-bar {
+    height: 100%; border-radius: 999px;
+    width: 0%; transition: width 1s ease-out;
+  }
+  .need-bar.low { background: linear-gradient(90deg, var(--red), #f97316); }
+  .need-bar.mid { background: linear-gradient(90deg, var(--warm), #fbbf24); }
+  .need-bar.high { background: linear-gradient(90deg, var(--green), #34d399); }
+  .need-pct {
+    font-size: .7rem; font-weight: 600; min-width: 38px; text-align: right;
+  }
+  .need-pct.low { color: var(--red); }
+  .need-pct.mid { color: var(--warm); }
+  .need-pct.high { color: var(--green); }
+
+  /* Donate icon on need rows */
+  .need-donate {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(99,102,241,.2);
+    background: rgba(99,102,241,.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all .25s;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
+  .need-donate:hover {
+    border-color: var(--green);
+    background: rgba(16,185,129,.12);
+    color: var(--green);
+    transform: scale(1.1);
+    box-shadow: 0 0 12px var(--green-glow);
+  }
+
+  .need-donate.donated {
+    border-color: var(--green);
+    background: rgba(16,185,129,.15);
+    color: var(--green);
+    box-shadow: 0 0 10px var(--green-glow);
+  }
+
+  /* Donate grid */
+  .donate-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: .75rem;
+  }
+  .donate-tile {
+    background: #1e293b;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.1rem .75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all .25s;
+    opacity: 0; transform: scale(.9);
+  }
+  .donate-tile.visible { opacity: 1; transform: scale(1); }
+  .donate-tile:hover {
+    border-color: var(--accent);
+    background: rgba(99,102,241,.08);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px var(--accent-glow);
+  }
+  .donate-tile.active {
+    border-color: var(--green);
+    background: rgba(16,185,129,.08);
+    box-shadow: 0 4px 16px var(--green-glow);
+  }
+  .donate-tile .icon { font-size: 1.6rem; margin-bottom: .4rem; }
+  .donate-tile .label { font-size: .72rem; font-weight: 500; color: var(--muted); }
+  .donate-tile .count {
+    font-size: .6rem; color: #475569; margin-top: .2rem;
+  }
+
+  /* Urgent list */
+  .urgent-item {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .65rem 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    opacity: 0; transition: opacity .4s;
+  }
+  .urgent-item.visible { opacity: 1; }
+  .urgent-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    overflow: hidden; flex-shrink: 0;
+    border: 2px solid var(--red);
+  }
+  .urgent-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .urgent-info { flex: 1; }
+  .urgent-info .name { font-size: .8rem; font-weight: 500; }
+  .urgent-info .desc { font-size: .68rem; color: var(--muted); margin-top: 1px; }
+  .urgent-badge {
+    font-size: .6rem; padding: 2px 8px; border-radius: 999px;
+    background: rgba(239,68,68,.12); color: #fca5a5;
+    font-weight: 600; flex-shrink: 0;
+  }
+  .urgent-time {
+    font-size: .6rem; color: #475569; flex-shrink: 0;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--green); color: #fff; padding: .75rem 2rem;
+    border-radius: 12px; font-size: .85rem; font-weight: 600;
+    box-shadow: 0 8px 30px var(--green-glow);
+    opacity: 0; transition: all .4s; pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Events */
+  .event-item {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .7rem 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    opacity: 0; transition: opacity .4s;
+  }
+  .event-item.visible { opacity: 1; }
+  .event-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+  .event-info { flex: 1; min-width: 0; }
+  .event-info .name { font-size: .8rem; font-weight: 500; }
+  .event-info .desc { font-size: .68rem; color: var(--muted); margin-top: 1px; }
+  .event-join {
+    padding: .35rem .85rem; border-radius: 8px;
+    border: 1px solid rgba(99,102,241,.3);
+    background: rgba(99,102,241,.08);
+    color: var(--accent); font-size: .7rem; font-weight: 600;
+    cursor: pointer; flex-shrink: 0; transition: all .25s;
+  }
+  .event-join:hover {
+    background: rgba(99,102,241,.18);
+    border-color: var(--accent);
+    transform: scale(1.05);
+  }
+  .event-join.joined {
+    background: rgba(16,185,129,.15);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+
+  @media (max-width: 700px) {
+    .dash-columns { flex-direction: column; }
+    .donate-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Particles
+(function() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (6 + Math.random() * 10) + 's';
+    p.style.animationDelay = Math.random() * 8 + 's';
+    p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+    c.appendChild(p);
+  }
+})();
+
+const $ = id => document.getElementById(id);
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+// --- Data ---
+const NEEDS = [
+  { icon: '🏠', bg: 'rgba(239,68,68,.12)', name: 'Shelter', requested: 842, fulfilled: 210, pct: 25 },
+  { icon: '💊', bg: 'rgba(245,158,11,.12)', name: 'Medicine & Medical Aid', requested: 1203, fulfilled: 480, pct: 40 },
+  { icon: '🧥', bg: 'rgba(99,102,241,.12)', name: 'Clothing & Blankets', requested: 634, fulfilled: 412, pct: 65 },
+  { icon: '🍞', bg: 'rgba(239,68,68,.12)', name: 'Food & Water', requested: 1580, fulfilled: 395, pct: 25 },
+  { icon: '👂', bg: 'rgba(16,185,129,.12)', name: 'Emotional Support / Listening', requested: 967, fulfilled: 724, pct: 75 },
+  { icon: '💰', bg: 'rgba(245,158,11,.12)', name: 'Financial Aid', requested: 2100, fulfilled: 630, pct: 30 },
+  { icon: '📚', bg: 'rgba(99,102,241,.12)', name: 'Education & Tutoring', requested: 312, fulfilled: 218, pct: 70 },
+  { icon: '🚗', bg: 'rgba(245,158,11,.12)', name: 'Transportation', requested: 445, fulfilled: 178, pct: 40 },
+  { icon: '🛏️', bg: 'rgba(239,68,68,.12)', name: 'Temporary Housing / Spare Room', requested: 523, fulfilled: 89, pct: 17 },
+  { icon: '🌐', bg: 'rgba(16,185,129,.12)', name: 'Translation Services', requested: 287, fulfilled: 201, pct: 70 },
+  { icon: '🧸', bg: 'rgba(245,158,11,.12)', name: 'Childcare & Supervision', requested: 389, fulfilled: 97, pct: 25 },
+  { icon: '🔧', bg: 'rgba(239,68,68,.12)', name: 'Home & Shelter Repairs', requested: 274, fulfilled: 55, pct: 20 },
+];
+
+const DONATE_TILES = [
+  { icon: '🏠', label: 'Shelter', count: '842 need' },
+  { icon: '💰', label: 'Money', count: '2,100 need' },
+  { icon: '💊', label: 'Medicine', count: '1,203 need' },
+  { icon: '🍞', label: 'Food', count: '1,580 need' },
+  { icon: '🧥', label: 'Clothes', count: '634 need' },
+  { icon: '👂', label: 'My Time', count: '967 need' },
+  { icon: '🛏️', label: 'Spare Room', count: '523 need' },
+  { icon: '🚗', label: 'Transport', count: '445 need' },
+  { icon: '📚', label: 'Tutoring', count: '312 need' },
+  { icon: '🧸', label: 'Childcare', count: '389 need' },
+  { icon: '🔧', label: 'Repairs', count: '274 need' },
+  { icon: '📦', label: 'Misc', count: '198 need' },
+];
+
+const URGENT = [
+  { img: 5, name: 'Amira K.', desc: 'Mother of 3, needs shelter tonight', time: '12 min ago' },
+  { img: 12, name: 'Youssef M.', desc: 'Diabetic, ran out of insulin', time: '28 min ago' },
+  { img: 25, name: 'Layla S.', desc: 'Alone, needs someone to talk to', time: '45 min ago' },
+  { img: 33, name: 'Omar R.', desc: 'Family of 5, no food since yesterday', time: '1 hr ago' },
+];
+
+const EVENTS = [
+  { icon: '🍞', bg: 'rgba(239,68,68,.12)', name: 'Food Distribution', desc: 'Today at 5 PM - Central Park', spots: 12 },
+  { icon: '🧥', bg: 'rgba(99,102,241,.12)', name: 'Clothing Drive', desc: 'Tomorrow 10 AM - Community Center', spots: 8 },
+  { icon: '🏥', bg: 'rgba(16,185,129,.12)', name: 'Medical Checkup Camp', desc: 'Fri 9 AM - City Hall', spots: 20 },
+  { icon: '📚', bg: 'rgba(245,158,11,.12)', name: 'Tutoring Session', desc: 'Sat 2 PM - Public Library', spots: 5 },
+  { icon: '🧸', bg: 'rgba(239,68,68,.12)', name: 'Kids Activity Day', desc: 'Sun 11 AM - Riverside Park', spots: 15 },
+];
+
+// --- Render needs ---
+async function renderNeeds() {
+  const container = $('needs-list');
+  for (const n of NEEDS) {
+    const level = n.pct < 35 ? 'low' : n.pct < 60 ? 'mid' : 'high';
+    const row = document.createElement('div');
+    row.className = 'need-row';
+    row.innerHTML = `
+      <div class="need-icon" style="background:${n.bg}">${n.icon}</div>
+      <div class="need-info">
+        <div class="need-name">${n.name}</div>
+        <div class="need-meta">${n.fulfilled.toLocaleString()} of ${n.requested.toLocaleString()} fulfilled</div>
+        <div class="need-bar-wrap"><div class="need-bar ${level}" data-pct="${n.pct}"></div></div>
+      </div>
+      <div class="need-pct ${level}">${n.pct}%</div>
+      <button class="need-donate" title="Support ${n.name}" aria-label="Donate to ${n.name}">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3C6.5 1.5 4 1.5 2.5 3S1.5 6.5 8 11.5C14.5 6.5 13.5 4.5 13.5 3S11.5 1.5 8 3z"/>
+          <line x1="8" y1="7" x2="8" y2="10"/>
+          <line x1="6.5" y1="8.5" x2="9.5" y2="8.5"/>
+        </svg>
+      </button>
+    `;
+    // Donate button click
+    const donateBtn = row.querySelector('.need-donate');
+    donateBtn.addEventListener('click', () => {
+      donateBtn.classList.toggle('donated');
+      showToast(donateBtn.classList.contains('donated')
+        ? `💚 You offered to support: ${n.name}`
+        : `Removed support for: ${n.name}`);
+    });
+    container.appendChild(row);
+    await wait(80);
+    row.classList.add('visible');
+    // animate bar after visible
+    requestAnimationFrame(() => {
+      row.querySelector('.need-bar').style.width = n.pct + '%';
+    });
+  }
+}
+
+// --- Render donate tiles ---
+async function renderTiles() {
+  const grid = $('donate-grid');
+  for (const t of DONATE_TILES) {
+    const tile = document.createElement('div');
+    tile.className = 'donate-tile';
+    tile.innerHTML = `
+      <div class="icon">${t.icon}</div>
+      <div class="label">${t.label}</div>
+      <div class="count">${t.count}</div>
+    `;
+    tile.addEventListener('click', () => {
+      tile.classList.toggle('active');
+      showToast(tile.classList.contains('active')
+        ? `Thank you! You offered: ${t.label}`
+        : `Removed: ${t.label}`);
+    });
+    grid.appendChild(tile);
+    await wait(60);
+    tile.classList.add('visible');
+  }
+}
+
+// --- Render urgent ---
+async function renderUrgent() {
+  const container = $('urgent-list');
+  for (const u of URGENT) {
+    const item = document.createElement('div');
+    item.className = 'urgent-item';
+    item.innerHTML = `
+      <div class="urgent-avatar"><img src="https://i.pravatar.cc/64?img=${u.img}" alt="${u.name}"></div>
+      <div class="urgent-info">
+        <div class="name">${u.name}</div>
+        <div class="desc">${u.desc}</div>
+      </div>
+      <div class="urgent-time">${u.time}</div>
+      <div class="urgent-badge">URGENT</div>
+      <button class="need-donate" title="Support ${u.name}" aria-label="Support ${u.name}">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3C6.5 1.5 4 1.5 2.5 3S1.5 6.5 8 11.5C14.5 6.5 13.5 4.5 13.5 3S11.5 1.5 8 3z"/>
+          <line x1="8" y1="7" x2="8" y2="10"/>
+          <line x1="6.5" y1="8.5" x2="9.5" y2="8.5"/>
+        </svg>
+      </button>
+    `;
+    const donateBtn = item.querySelector('.need-donate');
+    donateBtn.addEventListener('click', () => {
+      donateBtn.classList.toggle('donated');
+      showToast(donateBtn.classList.contains('donated')
+        ? `💚 You offered to support ${u.name}`
+        : `Removed support for ${u.name}`);
+    });
+    container.appendChild(item);
+    await wait(120);
+    item.classList.add('visible');
+  }
+}
+
+// --- Render events ---
+async function renderEvents() {
+  const container = $('events-list');
+  for (const e of EVENTS) {
+    const item = document.createElement('div');
+    item.className = 'event-item';
+    item.innerHTML = `
+      <div class="event-icon" style="background:${e.bg}">${e.icon}</div>
+      <div class="event-info">
+        <div class="name">${e.name}</div>
+        <div class="desc">${e.desc} · ${e.spots} spots left</div>
+      </div>
+      <button class="event-join">Join</button>
+    `;
+    const btn = item.querySelector('.event-join');
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('joined');
+      btn.textContent = btn.classList.contains('joined') ? 'Joined' : 'Join';
+      showToast(btn.classList.contains('joined')
+        ? `✅ You joined: ${e.name}`
+        : `Left: ${e.name}`);
+    });
+    container.appendChild(item);
+    await wait(100);
+    item.classList.add('visible');
+  }
+}
+
+// --- Toast ---
+let toastTimer;
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// --- Init ---
+(async function() {
+  await Promise.all([renderNeeds(), renderTiles()]);
+  await renderUrgent();
+  await renderEvents();
+})();
+</script>
+
+<!-- Gov footer -->
+<footer class="gov-footer">
+  <div class="gov-footer-inner">
+    <div class="gov-footer-top">
+      <div class="gov-footer-col">
+        <div class="col-title">Program</div>
+        <a href="ineedhelp.html">Request Support</a>
+        <a href="iwanttohelp.html">Become a Volunteer</a>
+        <a href="#">FAQ</a>
+      </div>
+      <div class="gov-footer-col">
+        <div class="col-title">Resources</div>
+        <a href="#">Mental Health Hotline</a>
+        <a href="#">Shelter Locator</a>
+        <a href="#">Medical Aid Stations</a>
+      </div>
+      <div class="gov-footer-col">
+        <div class="col-title">Contact</div>
+        <p>National Crisis Response Authority</p>
+        <p>Hotline: 1-800-CRISIS</p>
+        <p>Email: support@crisis.gov</p>
+      </div>
+    </div>
+    <div class="gov-footer-bottom">
+      <div class="legal">© 2026 National Crisis Response Authority. All rights reserved.</div>
+      <div class="badges">
+        <span class="badge">Official Gov Service</span>
+        <span class="badge">GDPR Compliant</span>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
