@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crisis Support Program - AI Matching Engine</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body {
+      overflow: hidden;
+    }
+
+    /* --- Canvas Area --- */
+    .match-arena {
+      height: calc(100vh - 110px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* --- Columns --- */
+    .column {
+      width: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 5;
+    }
+
+    .column-label {
+      text-align: center;
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .col-need .column-label { color: rgba(231, 76, 60, 0.6); }
+    .col-donor .column-label { color: rgba(46, 204, 113, 0.6); }
+
+    /* --- Profile Cards --- */
+    .card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      transition: all 0.5s ease;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card.matched {
+      border-color: rgba(52, 152, 219, 0.5);
+      background: rgba(52, 152, 219, 0.06);
+      box-shadow: 0 0 20px rgba(52, 152, 219, 0.1);
+    }
+
+    .card.scanned {
+      border-color: rgba(255,255,255,0.15);
+      box-shadow: 0 0 12px rgba(255,255,255,0.05);
+    }
+
+    .card.dimmed {
+      opacity: 0.25;
+      filter: grayscale(0.5);
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: grayscale(0.4) brightness(0.8);
+      transition: filter 0.4s;
+    }
+
+    .card.matched .avatar img {
+      filter: grayscale(0) brightness(1);
+    }
+
+    .card.scanned .avatar img {
+      filter: grayscale(0.2) brightness(0.9);
+    }
+
+    .card.dimmed .avatar img {
+      filter: grayscale(1) brightness(0.4);
+    }
+
+    .col-need .avatar {
+      border: 2px solid rgba(231, 76, 60, 0.35);
+    }
+
+    .col-need .card.matched .avatar {
+      border-color: rgba(231, 76, 60, 0.8);
+      box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+    }
+
+    .col-donor .avatar {
+      border: 2px solid rgba(46, 204, 113, 0.35);
+    }
+
+    .col-donor .card.matched .avatar {
+      border-color: rgba(46, 204, 113, 0.8);
+      box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+    }
+
+    .card-info { flex: 1; min-width: 0; }
+
+    .card-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 2px;
+    }
+
+    .card-detail {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.4);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-tags {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 0.55rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      letter-spacing: 0.3px;
+    }
+
+    .col-need .tag {
+      background: rgba(231, 76, 60, 0.1);
+      color: rgba(231, 76, 60, 0.7);
+      border: 1px solid rgba(231, 76, 60, 0.15);
+    }
+
+    .col-donor .tag {
+      background: rgba(46, 204, 113, 0.1);
+      color: rgba(46, 204, 113, 0.7);
+      border: 1px solid rgba(46, 204, 113, 0.15);
+    }
+
+    .urgency {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .urgency-critical { background: #e74c3c; box-shadow: 0 0 6px rgba(231,76,60,0.6); }
+    .urgency-high { background: #f39c12; box-shadow: 0 0 6px rgba(243,156,18,0.5); }
+    .urgency-moderate { background: #3498db; }
+
+    /* --- Center AI Brain --- */
+    .ai-center {
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .ai-core {
+      width: 100px;
+      height: 100px;
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .ai-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1.5px solid rgba(52, 152, 219, 0.2);
+      animation: aiSpin 8s linear infinite;
+    }
+
+    .ai-ring:nth-child(2) {
+      inset: 8px;
+      border-color: rgba(52, 152, 219, 0.3);
+      animation-duration: 6s;
+      animation-direction: reverse;
+    }
+
+    .ai-ring:nth-child(3) {
+      inset: 16px;
+      border-color: rgba(52, 152, 219, 0.15);
+      animation-duration: 4s;
+    }
+
+    .ai-ring.active {
+      border-color: rgba(52, 152, 219, 0.7);
+      box-shadow: 0 0 20px rgba(52, 152, 219, 0.2);
+    }
+
+    @keyframes aiSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .ai-dot {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(52, 152, 219, 0.4);
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 14, 20, 0.9);
+      border: 1.5px solid rgba(52, 152, 219, 0.3);
+    }
+
+    .ai-dot img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    .ai-dot.processing {
+      box-shadow: 0 0 40px rgba(255, 153, 0, 0.5), 0 0 80px rgba(52, 152, 219, 0.3);
+      border-color: rgba(255, 153, 0, 0.6);
+      animation: corePulse 0.8s ease-in-out infinite;
+    }
+
+    @keyframes corePulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 40px rgba(255,153,0,0.5), 0 0 80px rgba(52,152,219,0.3); }
+      50% { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 0 60px rgba(255,153,0,0.7), 0 0 100px rgba(52,152,219,0.4); }
+    }
+
+    /* --- Bedrock Badge --- */
+    .bedrock-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 1rem;
+      padding: 5px 12px;
+      background: rgba(255, 153, 0, 0.08);
+      border: 1px solid rgba(255, 153, 0, 0.2);
+      border-radius: 20px;
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: rgba(255, 153, 0, 0.8);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .bedrock-badge svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .bedrock-badge .bedrock-logo {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      object-fit: contain;
+    }
+
+    .bedrock-badge .powered-text {
+      opacity: 0.7;
+      font-weight: 400;
+      text-transform: none;
+    }
+
+    /* --- Status Console --- */
+    .console {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 12px 16px;
+      width: 240px;
+      min-height: 140px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.6rem;
+      line-height: 1.8;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .console-line {
+      opacity: 0;
+      transform: translateY(4px);
+      transition: all 0.3s ease;
+    }
+
+    .console-line.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .console-line .highlight { color: rgba(52, 152, 219, 0.9); }
+    .console-line .success { color: rgba(46, 204, 113, 0.9); }
+    .console-line .warn { color: rgba(243, 156, 18, 0.9); }
+    .console-line .label { color: rgba(255,255,255,0.25); }
+
+    /* --- Match Score Badge --- */
+    .match-score {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(8, 11, 18, 0.95);
+      border: 1px solid rgba(46, 204, 113, 0.4);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #2ecc71;
+      opacity: 0;
+      z-index: 15;
+      transition: opacity 0.4s;
+      pointer-events: none;
+    }
+
+    .match-score.visible { opacity: 1; }
+
+    /* --- SVG Connection Lines --- */
+    .connections-svg {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .conn-line {
+      fill: none;
+      stroke-width: 1.5;
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+
+    .conn-line.visible { opacity: 1; }
+
+    .conn-line.scanning {
+      stroke: rgba(52, 152, 219, 0.3);
+      stroke-dasharray: 6 4;
+      animation: dashFlow 1s linear infinite;
+    }
+
+    .conn-line.matched {
+      stroke: rgba(46, 204, 113, 0.5);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 4px rgba(46, 204, 113, 0.3));
+    }
+
+    @keyframes dashFlow {
+      0% { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: -20; }
+    }
+
+    /* --- Particle field --- */
+    .particles {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(52, 152, 219, 0.2);
+      border-radius: 50%;
+      animation: floatUp linear infinite;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
+
+    /* --- Restart Button --- */
+    .restart-btn {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 30;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.5);
+      padding: 0.5rem 1.2rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .restart-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.8);
+    }
+
+    /* --- Architecture Overlay --- */
+    .ai-dot { cursor: pointer; }
+    .arch-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,.85); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .arch-overlay.open { opacity: 1; pointer-events: auto; }
+    .arch-modal {
+      position: relative; max-width: 90vw; max-height: 85vh;
+    }
+    .arch-modal img {
+      max-width: 100%; max-height: 85vh; border-radius: 12px;
+      box-shadow: 0 0 60px rgba(52,152,219,.3);
+    }
+    .arch-close {
+      position: absolute; top: -12px; right: -12px;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      color: #fff; font-size: .9rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    .arch-close:hover { background: rgba(255,255,255,.2); }
+
+    /* --- Responsive --- */
+    @media (max-width: 900px) {
+      .column { width: 180px; }
+      .ai-center { width: 200px; }
+      .console { width: 170px; font-size: 0.55rem; }
+      .ai-core { width: 70px; height: 70px; }
+      .card { padding: 8px 10px; }
+      .card-name { font-size: 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Gov top bar -->
+  <div class="gov-topbar">
+    <span>An official program of the National Crisis Response Authority</span>
+    <span>24/7 Hotline: 1-800-CRISIS</span>
+  </div>
+
+  <!-- Gov header -->
+  <nav class="gov-header">
+    <div class="gov-header-inner">
+      <a href="index.html" class="gov-home-link">
+        <div class="gov-emblem">🏛️</div>
+        <div class="gov-header-text">
+          <div class="ministry">Ministry of Social Affairs & Humanitarian Aid</div>
+          <div class="program-name">Crisis Support Program</div>
+          <div class="program-sub">AI Matching Engine - Real-time crisis relief matching</div>
+        </div>
+      </a>
+      <div class="gov-header-nav">
+        <a href="index.html">Home</a>
+        <a href="ineedhelp.html">Get Help</a>
+        <a href="iwanttohelp.html">Volunteer</a>
+        <a href="matching.html" class="active">AI Engine</a>
+        <a href="volunteers.html">Browse</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Floating particles -->
+  <div class="particles" id="particles"></div>
+
+  <div class="match-arena" id="arena">
+    <!-- SVG for connection lines -->
+    <svg class="connections-svg" id="connectionsSvg"></svg>
+
+    <!-- Left: People in need -->
+    <div class="column col-need" id="colNeed">
+      <div class="column-label">People in Need</div>
+    </div>
+
+    <!-- Center: AI Engine -->
+    <div class="ai-center">
+      <div class="ai-core" id="aiCore">
+        <div class="ai-ring"></div>
+        <div class="ai-ring"></div>
+        <div class="ai-ring"></div>
+        <div class="ai-dot" id="aiDot">
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTbeidZQEbvGzOwylNQCbge5HvfM0F1WFYtzA&s" alt="Amazon Bedrock AI">
+        </div>
+      </div>
+      <div class="console" id="console"></div>
+      <div class="match-score" id="matchScore">97% Match</div>
+    </div>
+
+    <!-- Right: Donors / Helpers -->
+    <div class="column col-donor" id="colDonor">
+      <div class="column-label">Verified Helpers</div>
+    </div>
+  </div>
+
+  <button class="restart-btn" onclick="location.reload()">↻ Restart Animation</button>
+
+  <!-- Architecture Diagram Overlay -->
+  <div class="arch-overlay" id="archOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="arch-modal">
+      <button class="arch-close" onclick="document.getElementById('archOverlay').classList.remove('open')" aria-label="Close">✕</button>
+      <img src="generated-diagrams/crisis_platform_aws_architecture.png" alt="AWS Architecture Diagram">
+    </div>
+  </div>
+
+<script>
+// --- DATA ---
+const needProfiles = [
+  { name: "Amira K.", location: "Aleppo, Syria", needs: ["Food", "Baby Supplies"], urgency: "critical", img: 5 },
+  { name: "Oleksiy T.", location: "Kharkiv, Ukraine", needs: ["Medication", "Shelter"], urgency: "critical", img: 11 },
+  { name: "Fatima R.", location: "Sana'a, Yemen", needs: ["Medical", "Clean Water"], urgency: "high", img: 23 },
+  { name: "Hassan M.", location: "Gaza, Palestine", needs: ["Evacuation", "Food"], urgency: "critical", img: 53 },
+  { name: "Yuki S.", location: "Mariupol, Ukraine", needs: ["Shelter", "Clothing"], urgency: "high", img: 44 },
+  { name: "Layla A.", location: "Kabul, Afghanistan", needs: ["Education", "Financial"], urgency: "moderate", img: 9 },
+];
+
+const donorProfiles = [
+  { name: "Red Crescent Ch.", location: "Geneva, Switzerland", offers: ["Food", "Medical", "Water"], img: 60 },
+  { name: "Sarah W.", location: "London, UK", offers: ["Financial", "Baby Supplies"], img: 32 },
+  { name: "MedRelief Org", location: "Berlin, Germany", offers: ["Medication", "Medical"], img: 15 },
+  { name: "Ahmad D.", location: "Istanbul, Turkey", offers: ["Shelter", "Transport"], img: 33 },
+  { name: "HopeHands NGO", location: "Oslo, Norway", offers: ["Evacuation", "Food", "Clothing"], img: 68 },
+  { name: "Priya N.", location: "Toronto, Canada", offers: ["Education", "Financial", "Translation"], img: 26 },
+];
+
+// Pre-defined matches: [needIndex, donorIndex, score, matchedTag]
+const matches = [
+  [0, 1, 94, "Baby Supplies"],
+  [1, 2, 97, "Medication"],
+  [3, 4, 91, "Evacuation"],
+  [2, 0, 88, "Medical"],
+  [5, 5, 93, "Education"],
+  [4, 3, 86, "Shelter"],
+];
+
+// --- RENDER CARDS ---
+const colNeed = document.getElementById('colNeed');
+const colDonor = document.getElementById('colDonor');
+
+function createNeedCard(p, i) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = `need-${i}`;
+  card.innerHTML = `
+    <div class="avatar"><img src="https://i.pravatar.cc/80?img=${p.img}" alt="${p.name}"></div>
+    <div class="card-info">
+      <div class="card-name">${p.name}</div>
+      <div class="card-detail">${p.location}</div>
+      <div class="card-tags">${p.needs.map(n => `<span class="tag">${n}</span>`).join('')}</div>
+    </div>
+    <div class="urgency urgency-${p.urgency}"></div>
+  `;
+  return card;
+}
+
+function createDonorCard(p, i) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = `donor-${i}`;
+  card.innerHTML = `
+    <div class="avatar"><img src="https://i.pravatar.cc/80?img=${p.img}" alt="${p.name}"></div>
+    <div class="card-info">
+      <div class="card-name">${p.name}</div>
+      <div class="card-detail">${p.location}</div>
+      <div class="card-tags">${p.offers.map(n => `<span class="tag">${n}</span>`).join('')}</div>
+    </div>
+  `;
+  return card;
+}
+
+needProfiles.forEach((p, i) => colNeed.appendChild(createNeedCard(p, i)));
+donorProfiles.forEach((p, i) => colDonor.appendChild(createDonorCard(p, i)));
+
+// --- PARTICLES ---
+const particlesEl = document.getElementById('particles');
+for (let i = 0; i < 30; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.animationDuration = (6 + Math.random() * 10) + 's';
+  p.style.animationDelay = Math.random() * 8 + 's';
+  p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+  particlesEl.appendChild(p);
+}
+
+// --- SVG LINES ---
+const svg = document.getElementById('connectionsSvg');
+
+function getCardCenter(id, side) {
+  const el = document.getElementById(id);
+  if (!el) return { x: 0, y: 0 };
+  const rect = el.getBoundingClientRect();
+  return {
+    x: side === 'need' ? rect.right : rect.left,
+    y: rect.top + rect.height / 2
+  };
+}
+
+function createCurvedPath(x1, y1, x2, y2) {
+  const mx = (x1 + x2) / 2;
+  return `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+}
+
+function drawLine(needIdx, donorIdx, className) {
+  const from = getCardCenter(`need-${needIdx}`, 'need');
+  const to = getCardCenter(`donor-${donorIdx}`, 'donor');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', createCurvedPath(from.x, from.y, to.x, to.y));
+  path.setAttribute('class', `conn-line ${className}`);
+  svg.appendChild(path);
+  // Trigger reflow for transition
+  path.getBoundingClientRect();
+  path.classList.add('visible');
+  return path;
+}
+
+// --- CONSOLE LOG ---
+const consoleEl = document.getElementById('console');
+const consoleLines = [];
+
+function log(html) {
+  const line = document.createElement('div');
+  line.className = 'console-line';
+  line.innerHTML = html;
+  consoleEl.appendChild(line);
+  consoleLines.push(line);
+  // Keep only last 8 lines
+  if (consoleLines.length > 8) {
+    const old = consoleLines.shift();
+    old.remove();
+  }
+  requestAnimationFrame(() => line.classList.add('visible'));
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+// --- ANIMATION SEQUENCE ---
+const aiDot = document.getElementById('aiDot');
+const rings = document.querySelectorAll('.ai-ring');
+const matchScoreEl = document.getElementById('matchScore');
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runSequence() {
+  // Phase 1: Cards appear
+  log('<span class="label">SYS</span> Initializing matching engine...');
+  await sleep(600);
+
+  const needCards = document.querySelectorAll('.col-need .card');
+  const donorCards = document.querySelectorAll('.col-donor .card');
+
+  for (let i = 0; i < needCards.length; i++) {
+    needCards[i].classList.add('visible');
+    if (donorCards[i]) donorCards[i].classList.add('visible');
+    await sleep(200);
+  }
+
+  await sleep(500);
+  log('<span class="label">SYS</span> Loaded <span class="highlight">' + needProfiles.length + '</span> requests, <span class="highlight">' + donorProfiles.length + '</span> helpers');
+  await sleep(800);
+
+  // Phase 2: AI activates
+  log('<span class="label">AI</span> Connecting to Amazon Bedrock...');
+  aiDot.classList.add('processing');
+  rings.forEach(r => r.classList.add('active'));
+  await sleep(600);
+
+  log('<span class="label">AI</span> <span class="highlight">Bedrock Claude</span> model loaded');
+  await sleep(500);
+
+  log('<span class="label">AI</span> Analyzing needs, proximity, capacity...');
+  await sleep(1000);
+
+  // Phase 3: Match each pair
+  for (let m = 0; m < matches.length; m++) {
+    const [ni, di, score, tag] = matches[m];
+    const needCard = document.getElementById(`need-${ni}`);
+    const donorCard = document.getElementById(`donor-${di}`);
+
+    // Dim others
+    needCards.forEach(c => c.classList.add('dimmed'));
+    donorCards.forEach(c => c.classList.add('dimmed'));
+    needCard.classList.remove('dimmed');
+    donorCard.classList.remove('dimmed');
+
+    // Scan line
+    needCard.classList.add('scanned');
+    donorCard.classList.add('scanned');
+    log(`<span class="label">SCAN</span> ${needProfiles[ni].name} ↔ ${donorProfiles[di].name}`);
+
+    const scanLine = drawLine(ni, di, 'scanning');
+    await sleep(800);
+
+    // Evaluate
+    log(`<span class="label">AI</span> Match on <span class="highlight">${tag}</span> - scoring...`);
+    await sleep(600);
+
+    // Show score
+    matchScoreEl.textContent = `${score}% Match`;
+    matchScoreEl.style.borderColor = score > 90 ? 'rgba(46,204,113,0.5)' : 'rgba(243,156,18,0.5)';
+    matchScoreEl.style.color = score > 90 ? '#2ecc71' : '#f39c12';
+    matchScoreEl.classList.add('visible');
+    await sleep(500);
+
+    // Confirm match
+    scanLine.remove();
+    drawLine(ni, di, 'matched');
+    needCard.classList.remove('scanned');
+    donorCard.classList.remove('scanned');
+    needCard.classList.add('matched');
+    donorCard.classList.add('matched');
+
+    log(`<span class="success">✓ MATCHED</span> ${needProfiles[ni].name} → ${donorProfiles[di].name} <span class="success">(${score}%)</span>`);
+
+    matchScoreEl.classList.remove('visible');
+    await sleep(400);
+
+    // Un-dim
+    needCards.forEach(c => c.classList.remove('dimmed'));
+    donorCards.forEach(c => c.classList.remove('dimmed'));
+
+    await sleep(300);
+  }
+
+  // Phase 4: Complete
+  await sleep(500);
+  aiDot.classList.remove('processing');
+  rings.forEach(r => r.classList.remove('active'));
+  log('<span class="label">SYS</span> ──────────────────');
+  await sleep(300);
+  log(`<span class="success">✓ ${matches.length}/${needProfiles.length} matched</span> - <span class="warn">avg ${Math.round(matches.reduce((a, m) => a + m[2], 0) / matches.length)}% confidence</span>`);
+  await sleep(400);
+  log('<span class="label">SYS</span> Notifying matched parties...');
+}
+
+// Start after a brief delay
+setTimeout(runSequence, 500);
+
+// Bedrock logo click -> show architecture diagram
+document.getElementById('aiDot').addEventListener('click', function() {
+  document.getElementById('archOverlay').classList.add('open');
+});
+</script>
+
+</body>
+</html>
