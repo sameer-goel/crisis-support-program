@@ -8,4 +8,16 @@
 
 🔗 **Live:** [sameer-goel.github.io/crisis-support-program](https://sameer-goel.github.io/crisis-support-program/)
 
-![Homepage](./screenshot-home.png)
+---
+
+### Home
+![Home](./videos/home.gif)
+
+### Get Help
+![Get Help](./videos/gethelp.gif)
+
+### Volunteer
+![Volunteer](./videos/volunteer.gif)
+
+### AI Engine
+![AI Engine](./videos/aiengine.gif)
