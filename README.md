@@ -41,20 +41,4 @@ It mirrors how a thoughtful human coordinator would work, but at the scale of th
 
 ---
 
-## What's inside
-
-| Page | Purpose |
-|------|---------|
-| **Home** | Split-screen entry point — one side for those in crisis, one for those who want to help |
-| **Get Help** | Recipient flow — describe your situation, watch the AI find and schedule a match |
-| **Volunteer** | Donor dashboard — see real-time needs, offer what you have |
-| **Browse** | Search verified volunteers by skill, language, or availability |
-| **AI Engine** | Live visualization of how the matching actually works |
-
-## Run it
-
-Open `index.html` in any browser. No build, no server, no dependencies.
-
----
-
 *An official government-style initiative concept for connecting need with help during crisis.*
