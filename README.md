@@ -4,7 +4,11 @@
 
 A government-style web application that uses AI to connect people in crisis with verified volunteers and donors — matching needs to help in real time.
 
-![Split Landing](https://img.shields.io/badge/Status-Live-brightgreen) ![Pages](https://img.shields.io/badge/Hosted-GitHub%20Pages-blue)
+![Status](https://img.shields.io/badge/Status-Live-brightgreen) ![Pages](https://img.shields.io/badge/Hosted-GitHub%20Pages-blue)
+
+🔗 **Live Demo:** [sameer-goel.github.io/crisis-support-program](https://sameer-goel.github.io/crisis-support-program/)
+
+![Homepage Screenshot](./screenshot-home.png)
 
 ---
 
