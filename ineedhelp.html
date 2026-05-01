@@ -597,17 +597,6 @@ $('send-help-btn').addEventListener('click', async function() {
 $('join-btn').addEventListener('click', function() {
   alert('Connecting you to your session… (demo)');
 });
-
-// Auto-play: type message, press button, run flow
-(async function() {
-  await wait(800);
-  await typeMessage();
-  await wait(500);
-  const btn = $('send-help-btn');
-  btn.classList.add('pressed');
-  await wait(600);
-  await runAfterHelp();
-})();
 </script>
 
 <!-- Gov footer -->
